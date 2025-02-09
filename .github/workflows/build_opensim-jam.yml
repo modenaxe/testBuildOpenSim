@@ -20,8 +20,8 @@ jobs:
                 # os: [windows-2022]
                 include:
 
-                  - label: 'py3109-np1'
-                    python_version: '3.910'
+                  - label: 'py3910-np1'
+                    python_version: '3.9.10'
                     numpy_version: '1.*'
 
                   - label: 'py313-np2'
