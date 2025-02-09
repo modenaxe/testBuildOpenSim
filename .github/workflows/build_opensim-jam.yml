@@ -1,4 +1,4 @@
-name: openism-jam-core
+name: opensim-jam-core
 
 on: 
     push:
