@@ -81,12 +81,12 @@ jobs:
                 # ref: 'main'
 
 
-          - name: Checkout opensim-models Geometry
-            uses: actions/checkout@v4
-            with:
-                repository: opensim-org/opensim-models
-                path: 'opensim-models'
-                sparse-checkout: 'Geometry'
+          #- name: Checkout opensim-models Geometry
+          #  uses: actions/checkout@v4
+          #  with:
+          #      repository: opensim-org/opensim-models
+          #      path: 'opensim-models'
+          #      sparse-checkout: 'Geometry'
                 # sparse-checkout-cone-mode: false
 
 
@@ -94,7 +94,7 @@ jobs:
             run: |
                 dir $env:GITHUB_WORKSPACE
                 dir $env:GITHUB_WORKSPACE/opensim-core
-                dir $env:GITHUB_WORKSPACE/opensim-models
+                #dir $env:GITHUB_WORKSPACE/opensim-models
 
 
 
@@ -117,22 +117,11 @@ jobs:
                 cmake $env:GITHUB_WORKSPACE/opensim-core/dependencies `
                     -G "Visual Studio 17 2022" -A x64 `
                     -DSUPERBUILD_ezc3d=ON `
-                    -DOPENSIM_WITH_CASADI=ON `
+                    -DOPENSIM_WITH_CASADI=OFF `
                     -DOPENSIM_WITH_TROPTER=OFF `
                     -DCMAKE_INSTALL_PREFIX=~/opensim_dependencies_install
                     
                 cmake --build . --config Release -j4
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -161,7 +150,7 @@ jobs:
 
 
 
-          - name: Build opensim-jam
+          - name: Build opensim-core-minimal
             # if: steps.cache-jam.outputs.cache-hit != 'true'
             id: build
             run: |
@@ -174,8 +163,8 @@ jobs:
                     -DOPENSIM_DEPENDENCIES_DIR=~/opensim_dependencies_install `
                     -DOPENSIM_C3D_PARSER=ezc3d `
                     -DBUILD_PYTHON_WRAPPING=ON `
-                    -DOPENSIM_WITH_CASADI=ON `
-                    -DBUILD_JAVA_WRAPPING=ON `
+                    -DOPENSIM_WITH_CASADI=OFF `
+                    -DBUILD_JAVA_WRAPPING=OFF `
                     -DOPENSIM_WITH_TROPTER=OFF `
                     -DBUILD_TESTING=OFF `
                     -DCMAKE_INSTALL_PREFIX=~/opensim-core-install
@@ -196,10 +185,10 @@ jobs:
 
 
 
-          - name: Include Geometry folder
-            run: |
-                dir .
-                move $env:GITHUB_WORKSPACE/opensim-models/Geometry ~/opensim-core-install
+          #- name: Include Geometry folder
+          #  run: |
+          #      dir .
+          #      move $env:GITHUB_WORKSPACE/opensim-models/Geometry ~/opensim-core-install
 
                 # del ~/opensim-core-install/sdk/Python/setup.py
                 # del ~/opensim-core-install/sdk/Python/opensim/__init__.py
