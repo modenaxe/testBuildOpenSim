@@ -158,10 +158,10 @@ jobs:
                 chdir $env:GITHUB_WORKSPACE\\build
                 
                 $env:CXXFLAGS = "/W0"
+                                    # BEFORE PYTHON WRAPPING -DOPENSIM_C3D_PARSER=ezc3d `
                 cmake $env:GITHUB_WORKSPACE/opensim-core `
                     -G "Visual Studio 17 2022" -A x64 `
                     -DOPENSIM_DEPENDENCIES_DIR=~/opensim_dependencies_install `
-                    #-DOPENSIM_C3D_PARSER=ezc3d `
                     -DBUILD_PYTHON_WRAPPING=ON `
                     -DOPENSIM_WITH_CASADI=OFF `
                     -DBUILD_JAVA_WRAPPING=OFF `
