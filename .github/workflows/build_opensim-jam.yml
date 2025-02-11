@@ -2,8 +2,8 @@ name: opensim-core
 
 on: 
     push:
-    schedule:
-      - cron: '0 0 * * *'
+   # schedule:
+   #   - cron: '0 0 * * *'
 
 jobs:
 
@@ -116,7 +116,7 @@ jobs:
                 $env:CXXFLAGS = "/W0"
                 cmake $env:GITHUB_WORKSPACE/opensim-core/dependencies `
                     -G "Visual Studio 17 2022" -A x64 `
-                    -DSUPERBUILD_ezc3d=ON `
+                    -DSUPERBUILD_ezc3d=OFF `
                     -DOPENSIM_WITH_CASADI=OFF `
                     -DOPENSIM_WITH_TROPTER=OFF `
                     -DCMAKE_INSTALL_PREFIX=~/opensim_dependencies_install
@@ -161,7 +161,7 @@ jobs:
                 cmake $env:GITHUB_WORKSPACE/opensim-core `
                     -G "Visual Studio 17 2022" -A x64 `
                     -DOPENSIM_DEPENDENCIES_DIR=~/opensim_dependencies_install `
-                    -DOPENSIM_C3D_PARSER=ezc3d `
+                    #-DOPENSIM_C3D_PARSER=ezc3d `
                     -DBUILD_PYTHON_WRAPPING=ON `
                     -DOPENSIM_WITH_CASADI=OFF `
                     -DBUILD_JAVA_WRAPPING=OFF `
