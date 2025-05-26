@@ -25,7 +25,7 @@ jobs:
                     numpy_version: '1.*'
 
                   - label: 'py313-np2'
-                    python_version: '3.13.2'
+                    python_version: '3.13'
                     numpy_version: '2.*'
 
         steps:
