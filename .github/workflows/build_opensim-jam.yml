@@ -29,8 +29,8 @@ jobs:
           mkdir build_deps
           cd build_deps
           
-          # Added -DBUILD_USING_OTHER_LAPACK=ON to bypass the LAPACK check error
-          # Added -DOPENSIM_WITH_SIMBODY_LAPACK=ON to ensure internal linking
+          # The KEY FIX: Passing BUILD_USING_OTHER_LAPACK through to Simbody
+          # We use OPENSIM_EXTRA_SIMBODY_ARGS to inject flags into the sub-project.
           emcmake cmake ../opensim-core/dependencies \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
@@ -38,7 +38,7 @@ jobs:
             -DOPENSIM_WITH_CASADI=OFF \
             -DOPENSIM_WITH_TROPTER=OFF \
             -DBUILD_TESTING=OFF \
-            -DBUILD_USING_OTHER_LAPACK=ON \
+            -DOPENSIM_EXTRA_SIMBODY_ARGS="-DBUILD_USING_OTHER_LAPACK=ON;-DBUILD_TESTING=OFF;-DSIMBODY_EXAMPLES=OFF" \
             -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim_dependencies_install
           
           emmake make -j1
