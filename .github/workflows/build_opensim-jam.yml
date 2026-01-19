@@ -31,24 +31,18 @@ jobs:
           mkdir build_deps
           cd build_deps
           
-          # We pass arguments directly to the Simbody sub-project via OPENSIM_EXTRA_SIMBODY_ARGS.
-          # 1. -DCMAKE_EXE_LINKER_FLAGS="-s ERROR_ON_UNDEFINED_SYMBOLS=0": This is the CRITICAL fix.
-          #    It forces the 'lapack_test' to pass even though 'sdot_' isn't found.
-          # 2. -DBUILD_USING_OTHER_LAPACK=ON: Instructs Simbody to assume math libraries 
-          #    will be provided externally.
-          # 3. -DBUILD_VISUALIZER=OFF: Disables the native GUI visualizer (incompatible with WASM).
+          # The CRITICAL fix: use SIMBODY_EXTRA_CMAKE_ARGS instead of OPENSIM_EXTRA_SIMBODY_ARGS.
+          # The format requires colon-separated types (BOOL, STRING, etc.) and semicolon-separated arguments.
           
           emcmake cmake ../opensim-core/dependencies \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DSUPERBUILD_ezc3d=OFF \
             -DOPENSIM_WITH_CASADI=OFF \
-            -DOPENSIM_WITH_TROPTER=OFF \
             -DBUILD_TESTING=OFF \
-            -DOPENSIM_EXTRA_SIMBODY_ARGS="-DBUILD_USING_OTHER_LAPACK=ON;-DBUILD_VISUALIZER=OFF;-DSIMBODY_EXAMPLES=OFF;-DCMAKE_EXE_LINKER_FLAGS='-s ERROR_ON_UNDEFINED_SYMBOLS=0';-DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake" \
+            -DSIMBODY_EXTRA_CMAKE_ARGS="-DBUILD_USING_OTHER_LAPACK:BOOL=ON;-DBUILD_VISUALIZER:BOOL=OFF;-DSIMBODY_EXAMPLES:BOOL=OFF;-DCMAKE_EXE_LINKER_FLAGS:STRING='-s ERROR_ON_UNDEFINED_SYMBOLS=0';-DCMAKE_TOOLCHAIN_FILE:PATH=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake" \
             -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim_dependencies_install
           
-          # Single thread build to ensure stable logs and prevent RAM issues
           emmake make -j1
 
       - name: Build opensim-core (WASM)
@@ -65,7 +59,6 @@ jobs:
             -DBUILD_JAVA_WRAPPING=OFF \
             -DBUILD_TESTING=OFF \
             -DOPENSIM_WITH_CASADI=OFF \
-            -DOPENSIM_WITH_TROPTER=OFF \
             -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim-wasm-install \
             -DCMAKE_CXX_FLAGS="-fexceptions -s DISABLE_EXCEPTION_CATCHING=0 -s WASM_BIGINT -s ALLOW_MEMORY_GROWTH=1" \
             -DSIMBODY_EXAMPLES=OFF
