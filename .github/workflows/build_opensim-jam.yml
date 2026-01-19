@@ -29,8 +29,8 @@ jobs:
           mkdir build_deps
           cd build_deps
           
-          # The KEY FIX: Passing the Emscripten toolchain file directly to the superbuild
-          # This ensures Simbody, BTK, etc., all use the WASM compiler.
+          # Added -DBUILD_USING_OTHER_LAPACK=ON to bypass the LAPACK check error
+          # Added -DOPENSIM_WITH_SIMBODY_LAPACK=ON to ensure internal linking
           emcmake cmake ../opensim-core/dependencies \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
@@ -38,6 +38,7 @@ jobs:
             -DOPENSIM_WITH_CASADI=OFF \
             -DOPENSIM_WITH_TROPTER=OFF \
             -DBUILD_TESTING=OFF \
+            -DBUILD_USING_OTHER_LAPACK=ON \
             -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim_dependencies_install
           
           emmake make -j1
