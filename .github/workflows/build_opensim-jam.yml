@@ -3,6 +3,8 @@ name: build-opensim-wasm
 on: 
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build-wasm:
@@ -24,13 +26,16 @@ jobs:
         with:
           version: '3.1.51'
 
-      - name: Build dependencies
+      - name: Build opensim-core dependencies
         run: |
           mkdir build_deps
           cd build_deps
           
-          # The KEY FIX: Passing BUILD_USING_OTHER_LAPACK through to Simbody
-          # We use OPENSIM_EXTRA_SIMBODY_ARGS to inject flags into the sub-project.
+          # The KEY FIX: Passing arguments through the OpenSim Superbuild to Simbody.
+          # 1. -DBUILD_USING_OTHER_LAPACK=ON: Bypasses the failing 'sdot_' linker test.
+          # 2. -DCMAKE_TOOLCHAIN_FILE: Ensures sub-projects use the WASM compiler.
+          # 3. -j1: Prevents memory exhaustion (OOM) on GitHub runners.
+          
           emcmake cmake ../opensim-core/dependencies \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
@@ -38,7 +43,7 @@ jobs:
             -DOPENSIM_WITH_CASADI=OFF \
             -DOPENSIM_WITH_TROPTER=OFF \
             -DBUILD_TESTING=OFF \
-            -DOPENSIM_EXTRA_SIMBODY_ARGS="-DBUILD_USING_OTHER_LAPACK=ON;-DBUILD_TESTING=OFF;-DSIMBODY_EXAMPLES=OFF" \
+            -DOPENSIM_EXTRA_SIMBODY_ARGS="-DBUILD_USING_OTHER_LAPACK=ON;-DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake;-DBUILD_TESTING=OFF;-DSIMBODY_EXAMPLES=OFF" \
             -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim_dependencies_install
           
           emmake make -j1
@@ -47,6 +52,11 @@ jobs:
         run: |
           mkdir build_wasm
           cd build_wasm
+          
+          # Final build flags for the web environment:
+          # -fexceptions: Critical for OpenSim's error handling logic.
+          # WASM_BIGINT: Required for 64-bit integer support in JS.
+          # ALLOW_MEMORY_GROWTH: Vital for simulation state memory requirements.
           
           emcmake cmake ../opensim-core \
             -DCMAKE_BUILD_TYPE=Release \
