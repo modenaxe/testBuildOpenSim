@@ -21,7 +21,7 @@ jobs:
           - name: Setup Emscripten
             uses: mymindstorm/setup-emsdk@v14
             with:
-                version: '3.1.51' # Specific stable version recommended for complex C++ projects
+                version: '3.1.51'
 
           - name: Build opensim-core dependencies (WASM)
             run: |
@@ -35,7 +35,7 @@ jobs:
                     -DOPENSIM_WITH_TROPTER=OFF \
                     -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim_dependencies_install
                     
-                emmake make -j$(nproc)
+                emmake make
 
           - name: Build opensim-core (WASM)
             run: |
@@ -54,7 +54,7 @@ jobs:
                     -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim-wasm-install \
                     -DCMAKE_CXX_FLAGS="-s USE_PTHREADS=0 -s WASM_BIGINT" 
                     
-                emmake make install -j$(nproc)
+                emmake make install
 
           - name: Upload WASM Artifacts
             uses: actions/upload-artifact@v4
