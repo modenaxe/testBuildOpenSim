@@ -3,8 +3,6 @@ name: build-opensim-wasm
 on: 
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build-wasm:
@@ -26,34 +24,31 @@ jobs:
         with:
           version: '3.1.51'
 
-      - name: Build opensim-core dependencies
+      - name: Build dependencies
         run: |
           mkdir build_deps
           cd build_deps
           
-          # Use emcmake to wrap the dependency configuration
           emcmake cmake ../opensim-core/dependencies \
             -DCMAKE_BUILD_TYPE=Release \
             -DSUPERBUILD_ezc3d=OFF \
             -DOPENSIM_WITH_CASADI=OFF \
             -DOPENSIM_WITH_TROPTER=OFF \
+            -DBUILD_TESTING=OFF \
             -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim_dependencies_install
           
-          # Limited to 2 cores to prevent OOM (Out of Memory) errors on GitHub runners
-          emmake make -j2
+          # Single-thread the dependencies for maximum stability
+          emmake make -j1
 
       - name: Build opensim-core (WASM)
         run: |
           mkdir build_wasm
           cd build_wasm
           
-          # CXX_FLAGS explanation:
-          # -fexceptions & DISABLE_EXCEPTION_CATCHING=0: Required for OpenSim's error handling
-          # WASM_BIGINT: Allows 64-bit integers to pass between JS and WASM
-          # ALLOW_MEMORY_GROWTH: Allows the browser to allocate more RAM as needed
-          
+          # We add CMAKE_FIND_ROOT_PATH to tell CMake exactly where the WASM-compiled Simbody/BTK live
           emcmake cmake ../opensim-core \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_FIND_ROOT_PATH=$GITHUB_WORKSPACE/opensim_dependencies_install \
             -DOPENSIM_DEPENDENCIES_DIR=$GITHUB_WORKSPACE/opensim_dependencies_install \
             -DBUILD_PYTHON_WRAPPING=OFF \
             -DBUILD_JAVA_WRAPPING=OFF \
@@ -61,13 +56,11 @@ jobs:
             -DOPENSIM_WITH_CASADI=OFF \
             -DOPENSIM_WITH_TROPTER=OFF \
             -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim-wasm-install \
-            -DCMAKE_CXX_FLAGS="-fexceptions -s DISABLE_EXCEPTION_CATCHING=0 -s WASM_BIGINT -s ALLOW_MEMORY_GROWTH=1"
+            -DCMAKE_CXX_FLAGS="-fexceptions -s DISABLE_EXCEPTION_CATCHING=0 -s WASM_BIGINT -s ALLOW_MEMORY_GROWTH=1" \
+            -DSIMBODY_EXAMPLES=OFF
             
-          # Verify configuration before building
-          cmake -L .
-          
-          # Install command compiles the WASM and organizes the headers/libraries
-          emmake make install -j2
+          # Using -j1 for the final build to ensure the log stops exactly at the failing file
+          emmake make install -j1
 
       - name: Upload WASM Build Artifacts
         uses: actions/upload-artifact@v4
