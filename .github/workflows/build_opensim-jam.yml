@@ -1,63 +1,76 @@
-name: opensim-wasm-build
+name: build-opensim-wasm
 
 on: 
-    push:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-    build-wasm:
-        name: WASM Compilation
-        runs-on: ubuntu-latest
-        
-        steps:
-          - name: Checkout the current repository
-            uses: actions/checkout@v4
+  build-wasm:
+    name: Emscripten WASM Build
+    runs-on: ubuntu-latest
 
-          - name: Checkout opensim-core repository
-            uses: actions/checkout@v4
-            with:
-                repository: opensim-org/opensim-core
-                path: 'opensim-core'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-          - name: Setup Emscripten
-            uses: mymindstorm/setup-emsdk@v14
-            with:
-                version: '3.1.51'
+      - name: Checkout opensim-core
+        uses: actions/checkout@v4
+        with:
+          repository: opensim-org/opensim-core
+          path: 'opensim-core'
 
-          - name: Build opensim-core dependencies (WASM)
-            run: |
-                mkdir build_deps
-                cd build_deps
-                # Use emcmake to cross-compile dependencies for WASM
-                emcmake cmake ../opensim-core/dependencies \
-                    -DCMAKE_BUILD_TYPE=Release \
-                    -DSUPERBUILD_ezc3d=OFF \
-                    -DOPENSIM_WITH_CASADI=OFF \
-                    -DOPENSIM_WITH_TROPTER=OFF \
-                    -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim_dependencies_install
-                    
-                emmake make
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '3.1.51'
 
-          - name: Build opensim-core (WASM)
-            run: |
-                mkdir build_wasm
-                cd build_wasm
-                
-                # Disable features not compatible with a browser environment (like Java/Python wrapping)
-                emcmake cmake ../opensim-core \
-                    -DCMAKE_BUILD_TYPE=Release \
-                    -DOPENSIM_DEPENDENCIES_DIR=$GITHUB_WORKSPACE/opensim_dependencies_install \
-                    -DBUILD_PYTHON_WRAPPING=OFF \
-                    -DBUILD_JAVA_WRAPPING=OFF \
-                    -DBUILD_TESTING=OFF \
-                    -DOPENSIM_WITH_CASADI=OFF \
-                    -DOPENSIM_WITH_TROPTER=OFF \
-                    -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim-wasm-install \
-                    -DCMAKE_CXX_FLAGS="-s USE_PTHREADS=0 -s WASM_BIGINT" 
-                    
-                emmake make install
+      - name: Build opensim-core dependencies
+        run: |
+          mkdir build_deps
+          cd build_deps
+          
+          # Use emcmake to wrap the dependency configuration
+          emcmake cmake ../opensim-core/dependencies \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSUPERBUILD_ezc3d=OFF \
+            -DOPENSIM_WITH_CASADI=OFF \
+            -DOPENSIM_WITH_TROPTER=OFF \
+            -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim_dependencies_install
+          
+          # Limited to 2 cores to prevent OOM (Out of Memory) errors on GitHub runners
+          emmake make -j2
 
-          - name: Upload WASM Artifacts
-            uses: actions/upload-artifact@v4
-            with:
-                name: opensim-core-wasm
-                path: opensim-wasm-install/
+      - name: Build opensim-core (WASM)
+        run: |
+          mkdir build_wasm
+          cd build_wasm
+          
+          # CXX_FLAGS explanation:
+          # -fexceptions & DISABLE_EXCEPTION_CATCHING=0: Required for OpenSim's error handling
+          # WASM_BIGINT: Allows 64-bit integers to pass between JS and WASM
+          # ALLOW_MEMORY_GROWTH: Allows the browser to allocate more RAM as needed
+          
+          emcmake cmake ../opensim-core \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOPENSIM_DEPENDENCIES_DIR=$GITHUB_WORKSPACE/opensim_dependencies_install \
+            -DBUILD_PYTHON_WRAPPING=OFF \
+            -DBUILD_JAVA_WRAPPING=OFF \
+            -DBUILD_TESTING=OFF \
+            -DOPENSIM_WITH_CASADI=OFF \
+            -DOPENSIM_WITH_TROPTER=OFF \
+            -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim-wasm-install \
+            -DCMAKE_CXX_FLAGS="-fexceptions -s DISABLE_EXCEPTION_CATCHING=0 -s WASM_BIGINT -s ALLOW_MEMORY_GROWTH=1"
+            
+          # Verify configuration before building
+          cmake -L .
+          
+          # Install command compiles the WASM and organizes the headers/libraries
+          emmake make install -j2
+
+      - name: Upload WASM Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: opensim-wasm-dist
+          path: opensim-wasm-install/
