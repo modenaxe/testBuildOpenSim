@@ -3,7 +3,7 @@ name: build-opensim-modeler-wasm
 on: 
   push:
     branches: [ main ]
-  workflow_dispatch: # Allows manual triggering for testing
+  workflow_dispatch:
 
 jobs:
   build-wasm:
@@ -26,7 +26,6 @@ jobs:
           version: '3.1.51'
 
       - name: Build Simbody & Base Deps
-        # We only build the absolute minimum math/multibody core
         run: |
           mkdir build_deps
           cd build_deps
@@ -48,7 +47,6 @@ jobs:
           mkdir build_wasm
           cd build_wasm
           
-          # Focus on the API and Model classes, skipping simulation-only tools
           emcmake cmake ../opensim-core \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
@@ -65,7 +63,7 @@ jobs:
           emmake make install -j$(nproc)
 
       - name: Upload Modeler Artifacts
-        uses: upload-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: opensim-modeler-wasm
           path: opensim-wasm-install/
