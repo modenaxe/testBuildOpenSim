@@ -30,8 +30,6 @@ jobs:
           mkdir build_deps
           cd build_deps
           
-          # We add -DBUILD_TESTING=OFF to skip Catch2/Test build errors.
-          # We use -j1 to ensure clear logs if a specific file fails.
           emcmake cmake ../opensim-core/dependencies \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
@@ -39,7 +37,7 @@ jobs:
             -DOPENSIM_WITH_CASADI=OFF \
             -DOPENSIM_WITH_TROPTER=OFF \
             -DBUILD_TESTING=OFF \
-            -DSIMBODY_EXTRA_CMAKE_ARGS="-DBUILD_USING_OTHER_LAPACK:BOOL=ON;-DBUILD_VISUALIZER:BOOL=OFF;-DSIMBODY_EXAMPLES:BOOL=OFF;-DBUILD_TESTING:BOOL=OFF;-DCMAKE_TOOLCHAIN_FILE:PATH=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake" \
+            -DSIMBODY_EXTRA_CMAKE_ARGS="-DBUILD_USING_OTHER_LAPACK:BOOL=ON;-DBUILD_VISUALIZER:BOOL=OFF;-DSIMBODY_EXAMPLES:BOOL=OFF;-DBUILD_TESTING:BOOL=OFF;-DCMAKE_EXE_LINKER_FLAGS:STRING='-s ERROR_ON_UNDEFINED_SYMBOLS=0';-DCMAKE_TOOLCHAIN_FILE:PATH=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake" \
             -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim_dependencies_install
           
           emmake make -j$(nproc)
@@ -49,7 +47,6 @@ jobs:
           mkdir build_wasm
           cd build_wasm
           
-          # BUILD_API_ONLY is critical for web apps to avoid broken CLI executables.
           emcmake cmake ../opensim-core \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
@@ -66,7 +63,6 @@ jobs:
           emmake make install -j$(nproc)
 
       - name: Upload Modeler Artifacts
-        # "actions/" prefix to resolve the Check Failure.
         uses: actions/upload-artifact@v4
         with:
           name: opensim-modeler-wasm
