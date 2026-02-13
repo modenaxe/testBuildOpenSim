@@ -1,14 +1,13 @@
-name: build-opensim-wasm
+name: build-opensim-modeler-wasm
 
 on: 
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch: # Allows manual triggering for testing
 
 jobs:
   build-wasm:
-    name: Emscripten WASM Build
+    name: OpenSim Modeler WASM Build
     runs-on: ubuntu-latest
 
     steps:
@@ -26,47 +25,47 @@ jobs:
         with:
           version: '3.1.51'
 
-      - name: Build opensim-core dependencies
+      - name: Build Simbody & Base Deps
+        # We only build the absolute minimum math/multibody core
         run: |
           mkdir build_deps
           cd build_deps
-          
-          # The CRITICAL fix: use SIMBODY_EXTRA_CMAKE_ARGS instead of OPENSIM_EXTRA_SIMBODY_ARGS.
-          # The format requires colon-separated types (BOOL, STRING, etc.) and semicolon-separated arguments.
           
           emcmake cmake ../opensim-core/dependencies \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DSUPERBUILD_ezc3d=OFF \
             -DOPENSIM_WITH_CASADI=OFF \
+            -DOPENSIM_WITH_TROPTER=OFF \
             -DBUILD_TESTING=OFF \
-            -DSIMBODY_EXTRA_CMAKE_ARGS="-DBUILD_USING_OTHER_LAPACK:BOOL=ON;-DBUILD_VISUALIZER:BOOL=OFF;-DSIMBODY_EXAMPLES:BOOL=OFF;-DCMAKE_EXE_LINKER_FLAGS:STRING='-s ERROR_ON_UNDEFINED_SYMBOLS=0';-DCMAKE_TOOLCHAIN_FILE:PATH=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake" \
+            -DSIMBODY_EXTRA_CMAKE_ARGS="-DBUILD_USING_OTHER_LAPACK:BOOL=ON;-DBUILD_VISUALIZER:BOOL=OFF;-DSIMBODY_EXAMPLES:BOOL=OFF;-DSET_HAVE_VERSION_SCRIPT:BOOL=OFF;-DCMAKE_TOOLCHAIN_FILE:PATH=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake" \
             -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim_dependencies_install
           
-          emmake make -j1
+          emmake make -j$(nproc)
 
-      - name: Build opensim-core (WASM)
+      - name: Build opensim-core (Modeler Only)
         run: |
           mkdir build_wasm
           cd build_wasm
           
+          # Focus on the API and Model classes, skipping simulation-only tools
           emcmake cmake ../opensim-core \
-            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
-            -DCMAKE_FIND_ROOT_PATH=$GITHUB_WORKSPACE/opensim_dependencies_install \
             -DOPENSIM_DEPENDENCIES_DIR=$GITHUB_WORKSPACE/opensim_dependencies_install \
+            -DBUILD_API_ONLY=ON \
             -DBUILD_PYTHON_WRAPPING=OFF \
             -DBUILD_JAVA_WRAPPING=OFF \
             -DBUILD_TESTING=OFF \
             -DOPENSIM_WITH_CASADI=OFF \
+            -DOPENSIM_WITH_TROPTER=OFF \
             -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/opensim-wasm-install \
-            -DCMAKE_CXX_FLAGS="-fexceptions -s DISABLE_EXCEPTION_CATCHING=0 -s WASM_BIGINT -s ALLOW_MEMORY_GROWTH=1" \
-            -DSIMBODY_EXAMPLES=OFF
+            -DCMAKE_CXX_FLAGS="-fexceptions -s DISABLE_EXCEPTION_CATCHING=0 -s ALLOW_MEMORY_GROWTH=1 -s EXIT_RUNTIME=0"
             
-          emmake make install -j1
+          emmake make install -j$(nproc)
 
-      - name: Upload WASM Build Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload Modeler Artifacts
+        uses: upload-artifact@v4
         with:
-          name: opensim-wasm-dist
+          name: opensim-modeler-wasm
           path: opensim-wasm-install/
